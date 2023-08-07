@@ -3,54 +3,30 @@ use super::{Error, Result};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-enum StagedOption {
-    NotStaged,
-    Staged,
-}
-
-pub struct GitDiff {
+pub struct GitLsTree {
     inner: Git,
-    from: String,
-    to: Option<String>,
+    commit: String,
     root_dir: PathBuf,
 }
 
-impl GitDiff {
+impl GitLsTree {
     pub fn new(
         git: impl AsRef<Path>,
-        from: impl Into<String>,
-        to: Option<impl Into<String>>,
+        commit: impl Into<String>,
         target_dir: impl AsRef<Path>,
     ) -> Result<Self> {
         let git = Git::from_path(git)?;
         let root_dir = git.get_rootdir(target_dir.as_ref())?;
         Ok(Self {
             inner: git,
-            from: from.into(),
-            to: to.map(Into::into),
+            commit: commit.into(),
             root_dir,
         })
     }
 
     pub fn name_only(&self) -> Result<Vec<String>> {
-        self.inner_name_only(StagedOption::NotStaged)
-    }
-
-    pub fn staged_name_only(&self) -> Result<Vec<String>> {
-        self.inner_name_only(StagedOption::Staged)
-    }
-
-    fn inner_name_only(&self, staged: StagedOption) -> Result<Vec<String>> {
         self.inner.exec(&self.root_dir, |git| {
-            let mut args = vec!["diff"];
-            match staged {
-                StagedOption::Staged => args.push("--staged"),
-                _ => (),
-            }
-            args.extend(vec!["--name-only", &self.from]);
-            if let Some(to) = self.to.as_ref() {
-                args.push(to);
-            }
+            let args = vec!["ls-tree", "-r", "--name-only", &self.commit];
             let output = Command::new(git)
                 .args(args)
                 .stdout(Stdio::piped())
@@ -61,7 +37,7 @@ impl GitDiff {
 
             if !output.status.success() {
                 println!("{stderr}");
-                return Err(Error::Command("Failed to get differences".into()));
+                return Err(Error::Command("Failed to get tree of files".into()));
             }
 
             Ok(stdout

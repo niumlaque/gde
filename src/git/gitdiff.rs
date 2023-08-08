@@ -43,9 +43,8 @@ impl GitDiff {
     fn inner_name_only(&self, staged: StagedOption) -> Result<Vec<String>> {
         self.inner.exec(&self.root_dir, |git| {
             let mut args = vec!["diff"];
-            match staged {
-                StagedOption::Staged => args.push("--staged"),
-                _ => (),
+            if let StagedOption::Staged = staged {
+                args.push("--staged");
             }
             args.extend(vec!["--name-only", &self.from]);
             if let Some(to) = self.to.as_ref() {

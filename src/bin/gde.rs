@@ -72,7 +72,7 @@ fn main() -> Result<()> {
         bail!("Please commit or discard the changes");
     }
 
-    let gitdiff = GitDiff::new(&git_path, &cli.from, Some(cli.to), &target_dir)?;
+    let gitdiff = GitDiff::new(&git_path, &cli.from, Some(&cli.to), &target_dir)?;
     let files = gitdiff.name_only()?;
     println!("Updated files:");
     for file in files.iter() {
@@ -81,8 +81,17 @@ fn main() -> Result<()> {
 
     // From
     let from_dir = output_dir.join("from");
-    let from = FilesCopy::new(&git_path, files.iter(), &target_dir, &cli.from, &from_dir);
+    println!("Copiying `from` files...");
+    let from = FilesCopy::new(&git_path, files.iter(), &target_dir, &cli.from, from_dir);
     from.copy()?;
+
+    // To
+    let to_dir = output_dir.join("to");
+    println!("Copiying `to` files...");
+    let to = FilesCopy::new(&git_path, files.iter(), &target_dir, &cli.to, to_dir);
+    to.copy()?;
+
+    println!("done");
 
     Ok(())
 }
@@ -108,7 +117,7 @@ impl FilesCopy {
             .collect::<Vec<_>>();
         Self {
             git_path: git_path.as_ref().to_path_buf(),
-            target_files: target_files,
+            target_files,
             target_dir: target_dir.as_ref().to_path_buf(),
             commit: commit.into(),
             output_dir: output_dir.as_ref().to_path_buf(),

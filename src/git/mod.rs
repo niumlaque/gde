@@ -87,6 +87,32 @@ impl Git {
         })
     }
 
+    pub fn get_hash(&self, path: impl AsRef<Path>, commit: impl AsRef<str>) -> Result<String> {
+        self.exec(path, |git| {
+            let commit = commit.as_ref();
+            let output = Command::new(git)
+                .arg("rev-parse")
+                .arg(commit)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .output()?;
+
+            let stdout = String::from_utf8(output.stdout)?;
+
+            if !output.status.success() {
+                let stderr = String::from_utf8(output.stderr)?;
+                println!("{stderr}");
+                return Err(Error::Command(format!("Failed to get hash of {commit}",)));
+            }
+
+            if let Some(ret) = stdout.split('\n').next() {
+                Ok(ret.into())
+            } else {
+                return Err(Error::Command(format!("Failed to get hash of {commit}",)));
+            }
+        })
+    }
+
     fn change_currentdir(to: impl AsRef<Path>) -> Result<PathBuf> {
         let dir = current_dir()?;
         env::set_current_dir(to)?;

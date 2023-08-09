@@ -73,9 +73,10 @@ impl Git {
                 .stderr(Stdio::piped())
                 .output()?;
             let stdout = String::from_utf8(output.stdout)?;
-            let stderr = String::from_utf8(output.stderr)?;
 
-            if !stderr.is_empty() {
+            if !output.status.success() {
+                let stderr = String::from_utf8(output.stderr)?;
+                println!("{stderr}");
                 return Err(Error::Command("Failed to get root directory".into()));
             }
 

@@ -63,7 +63,7 @@ fn main() -> Result<()> {
     } else {
         env::current_dir()?
     };
-    output_dir.push(uuid::Uuid::new_v4().to_string());
+    output_dir.push(format!("gde-{}", uuid::Uuid::new_v4()));
     println!("output directory: {}", output_dir.display());
 
     // check changes
@@ -79,16 +79,33 @@ fn main() -> Result<()> {
         println!("\t{}", file);
     }
 
+    let current_commit = git.get_hash(&target_dir, "HEAD")?;
+    println!("current commit: {}", current_commit);
+
     // From
     let from_dir = output_dir.join("from");
     println!("Copiying `from` files...");
-    let from = FilesCopy::new(&git_path, files.iter(), &target_dir, &cli.from, from_dir);
+    let from = FilesCopy::new(
+        &git_path,
+        files.iter(),
+        &target_dir,
+        &cli.from,
+        &current_commit,
+        from_dir,
+    );
     from.copy()?;
 
     // To
     let to_dir = output_dir.join("to");
     println!("Copiying `to` files...");
-    let to = FilesCopy::new(&git_path, files.iter(), &target_dir, &cli.to, to_dir);
+    let to = FilesCopy::new(
+        &git_path,
+        files.iter(),
+        &target_dir,
+        &cli.to,
+        &current_commit,
+        to_dir,
+    );
     to.copy()?;
 
     println!("done");
@@ -101,6 +118,7 @@ struct FilesCopy {
     target_files: Vec<String>,
     target_dir: PathBuf,
     commit: String,
+    original_commit: String,
     output_dir: PathBuf,
 }
 
@@ -110,6 +128,7 @@ impl FilesCopy {
         target_files: I,
         target_dir: impl AsRef<Path>,
         commit: impl Into<String>,
+        original_commit: impl Into<String>,
         output_dir: impl AsRef<Path>,
     ) -> Self {
         let target_files = target_files
@@ -120,6 +139,7 @@ impl FilesCopy {
             target_files,
             target_dir: target_dir.as_ref().to_path_buf(),
             commit: commit.into(),
+            original_commit: original_commit.into(),
             output_dir: output_dir.as_ref().to_path_buf(),
         }
     }
@@ -128,6 +148,7 @@ impl FilesCopy {
         let gitls = GitLsTree::new(&self.git_path, &self.commit, &self.target_dir)?;
         let set = gitls.name_only()?.into_iter().collect::<HashSet<_>>();
         let gc = GitCheckout::new(&self.git_path, &self.commit, &self.target_dir)?;
+        let gc_origin = GitCheckout::new(&self.git_path, &self.original_commit, &self.target_dir)?;
 
         for file in self.target_files.iter() {
             let mut dir = PathBuf::from(file);
@@ -143,6 +164,10 @@ impl FilesCopy {
                     source_file.display(),
                     dest_file.display()
                 );
+
+                if let Err(e) = gc_origin.checkout(file) {
+                    println!("Failed to rest {file} to {}({e})", self.original_commit);
+                }
             }
         }
 

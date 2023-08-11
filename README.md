@@ -20,22 +20,22 @@ Options:
 ```sh
 $ git clone https://github.com/niumlaque/gde.git /tmp/piyopiyo
 $ gde --from 6a0453c --to 86ab16a -o /tmp /tmp/piyopiyo
-git version: git version 2.30.2
-target directory: /tmp/piyopiyo
-root directory: /tmp/piyopiyo
-output directory: /tmp/gde-a9c24409-828b-4991-a717-ba6fc8a7d1be
+Git version: 2.30.2
+Target directory: /tmp/piyopiyo
+Root directory: /tmp/piyopiyo
+Output directory: /tmp/gde-3cfab506-b010-4dcf-a398-c6db8deeb552
 Updated files:
         src/bin/gde.rs
         src/git/gitdiff.rs
         src/git/mod.rs
-current commit: 10a6ec373e98afcf8bd8d172122fded630b4db17
-Copiying `from` files...
-Copied: /tmp/piyopiyo/src/bin/gde.rs -> /tmp/gde-a9c24409-828b-4991-a717-ba6fc8a7d1be/from/src/bin/gde.rs
-Copied: /tmp/piyopiyo/src/git/gitdiff.rs -> /tmp/gde-a9c24409-828b-4991-a717-ba6fc8a7d1be/from/src/git/gitdiff.rs
-Copied: /tmp/piyopiyo/src/git/mod.rs -> /tmp/gde-a9c24409-828b-4991-a717-ba6fc8a7d1be/from/src/git/mod.rs
-Copiying `to` files...
-Copied: /tmp/piyopiyo/src/bin/gde.rs -> /tmp/gde-a9c24409-828b-4991-a717-ba6fc8a7d1be/to/src/bin/gde.rs
-Copied: /tmp/piyopiyo/src/git/gitdiff.rs -> /tmp/gde-a9c24409-828b-4991-a717-ba6fc8a7d1be/to/src/git/gitdiff.rs
-Copied: /tmp/piyopiyo/src/git/mod.rs -> /tmp/gde-a9c24409-828b-4991-a717-ba6fc8a7d1be/to/src/git/mod.rs
-done
+Current commit: 10a6ec373e98afcf8bd8d172122fded630b4db17
+Copiying `6a0453c` files...
+Copied: /tmp/piyopiyo/src/bin/gde.rs -> /tmp/gde-3cfab506-b010-4dcf-a398-c6db8deeb552/from/src/bin/gde.rs
+Copied: /tmp/piyopiyo/src/git/gitdiff.rs -> /tmp/gde-3cfab506-b010-4dcf-a398-c6db8deeb552/from/src/git/gitdiff.rs
+Copied: /tmp/piyopiyo/src/git/mod.rs -> /tmp/gde-3cfab506-b010-4dcf-a398-c6db8deeb552/from/src/git/mod.rs
+Copiying `86ab16a` files...
+Copied: /tmp/piyopiyo/src/bin/gde.rs -> /tmp/gde-3cfab506-b010-4dcf-a398-c6db8deeb552/to/src/bin/gde.rs
+Copied: /tmp/piyopiyo/src/git/gitdiff.rs -> /tmp/gde-3cfab506-b010-4dcf-a398-c6db8deeb552/to/src/git/gitdiff.rs
+Copied: /tmp/piyopiyo/src/git/mod.rs -> /tmp/gde-3cfab506-b010-4dcf-a398-c6db8deeb552/to/src/git/mod.rs
+Done
 ```

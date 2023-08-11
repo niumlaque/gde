@@ -46,16 +46,16 @@ fn main() -> Result<()> {
     };
 
     let git = gde::git::Git::from_path(&git_path)?;
-    println!("git version: {}", git.version());
+    println!("Git version: {}", git.version());
 
     let target_dir = if let Some(dir) = cli.target {
         absolute_path(dir)?
     } else {
         env::current_dir()?
     };
-    println!("target directory: {}", target_dir.display());
+    println!("Target directory: {}", target_dir.display());
     println!(
-        "root directory: {}",
+        "Root directory: {}",
         git.get_rootdir(&target_dir)?.display()
     );
     let mut output_dir = if let Some(dir) = cli.output {
@@ -64,7 +64,7 @@ fn main() -> Result<()> {
         env::current_dir()?
     };
     output_dir.push(format!("gde-{}", uuid::Uuid::new_v4()));
-    println!("output directory: {}", output_dir.display());
+    println!("Output directory: {}", output_dir.display());
 
     // check changes
     let gitdiff = GitDiff::new(&git_path, "HEAD", None::<String>, &target_dir)?;
@@ -80,11 +80,11 @@ fn main() -> Result<()> {
     }
 
     let current_commit = git.get_hash(&target_dir, "HEAD")?;
-    println!("current commit: {}", current_commit);
+    println!("Current commit: {}", current_commit);
 
     // From
     let from_dir = output_dir.join("from");
-    println!("Copiying `from` files...");
+    println!("Copiying `{}` files...", cli.from);
     let from = FilesCopy::new(
         &git_path,
         files.iter(),
@@ -97,7 +97,7 @@ fn main() -> Result<()> {
 
     // To
     let to_dir = output_dir.join("to");
-    println!("Copiying `to` files...");
+    println!("Copiying `{}` files...", cli.to);
     let to = FilesCopy::new(
         &git_path,
         files.iter(),
@@ -108,7 +108,7 @@ fn main() -> Result<()> {
     );
     to.copy()?;
 
-    println!("done");
+    println!("Done");
 
     Ok(())
 }

@@ -34,10 +34,14 @@ impl Git {
 
         if let Some(ret) = stdout.split('\n').next() {
             let s = "git version ";
-            Ok(ret
-                .get(s.len()..ret.len())
-                .map(|x| x.to_string())
-                .unwrap_or(ret.into()))
+            if ret.starts_with(s) {
+                Ok(ret
+                    .get(s.len()..ret.len())
+                    .map(|x| x.to_string())
+                    .unwrap_or(ret.into()))
+            } else {
+                Ok(ret.into())
+            }
         } else {
             Err(Error::Command("Failed to get version".into()))
         }

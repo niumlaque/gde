@@ -8,13 +8,13 @@ _"Huh? What's git? I don't get it, I don't get it. I don't want to use anything 
 Usage: gde [OPTIONS] --from <FROM COMMIT> --to <TO COMMIT> [TARGET REPO DIR]
 
 Arguments:
-  [TARGET REPO DIR]
+  [TARGET REPO DIR]  Path to the git-managed directory for diff
 
 Options:
-      --git <GIT EXECUTABLE>  Path to git executable
-      --from <FROM COMMIT>
-      --to <TO COMMIT>
-  -o, --output <OUTPUT DIR>
+      --git <GIT EXECUTABLE>  Path to Git executable used when Git is not in the system PATH
+      --from <FROM COMMIT>    Show all differences from this commit
+      --to <TO COMMIT>        Show all differences up to this commit
+  -o, --output <OUTPUT DIR>   Destination for output files
   -h, --help                  Print help
 ```
 ```sh

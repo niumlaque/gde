@@ -9,19 +9,23 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Parser)]
 struct Cli {
-    /// Path to git executable
+    /// Path to Git executable used when Git is not in the system PATH
     #[arg(long, value_name = "GIT EXECUTABLE")]
     git: Option<PathBuf>,
 
+    /// Show all differences from this commit
     #[arg(long, value_name = "FROM COMMIT")]
     from: String,
 
+    /// Show all differences up to this commit
     #[arg(long, value_name = "TO COMMIT")]
     to: String,
 
+    /// Destination for output files
     #[arg(short, long, value_name = "OUTPUT DIR")]
     output: Option<PathBuf>,
 
+    /// Path to the git-managed directory for diff
     #[arg(value_name = "TARGET REPO DIR")]
     target: Option<PathBuf>,
 }

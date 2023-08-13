@@ -12,8 +12,8 @@ Arguments:
 
 Options:
       --git <GIT EXECUTABLE>  Path to Git executable used when Git is not in the system PATH
-      --from <FROM COMMIT>    Show all differences from this commit
-      --to <TO COMMIT>        Show all differences up to this commit
+      --from <FROM COMMIT>    Get all differences from this commit
+      --to <TO COMMIT>        Get all differences up to this commit
   -o, --output <OUTPUT DIR>   Destination for output files
   -h, --help                  Print help
 ```

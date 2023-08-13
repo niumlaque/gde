@@ -13,11 +13,11 @@ struct Cli {
     #[arg(long, value_name = "GIT EXECUTABLE")]
     git: Option<PathBuf>,
 
-    /// Show all differences from this commit
+    /// Get all differences from this commit
     #[arg(long, value_name = "FROM COMMIT")]
     from: String,
 
-    /// Show all differences up to this commit
+    /// Get all differences up to this commit
     #[arg(long, value_name = "TO COMMIT")]
     to: String,
 

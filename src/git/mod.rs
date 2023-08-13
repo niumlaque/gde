@@ -111,13 +111,13 @@ impl Git {
             if !output.status.success() {
                 let stderr = String::from_utf8(output.stderr)?;
                 println!("{stderr}");
-                return Err(Error::Command(format!("Failed to get hash of {commit}",)));
+                return Err(Error::Command(format!("Failed to get hash of {commit}")));
             }
 
             if let Some(ret) = stdout.split('\n').next() {
                 Ok(ret.into())
             } else {
-                return Err(Error::Command(format!("Failed to get hash of {commit}",)));
+                Err(Error::Command(format!("Failed to get hash of {commit}")))
             }
         })
     }

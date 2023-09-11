@@ -1,11 +1,13 @@
 mod error;
 mod gitcheckout;
 mod gitdiff;
+mod gitlog;
 mod gitlstree;
 
 pub use error::{Error, Result};
 pub use gitcheckout::GitCheckout;
 pub use gitdiff::GitDiff;
+pub use gitlog::GitLog;
 pub use gitlstree::GitLsTree;
 
 use std::env::{self, current_dir};

@@ -171,3 +171,83 @@ impl<'a> FilesCopyInner<'a> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use flate2::read::GzDecoder;
+    use outdir_tempdir::TempDir;
+    use std::env;
+    use std::fs::File;
+    use tar::Archive;
+
+    fn get_test_file() -> PathBuf {
+        env::current_dir().unwrap().join("tests").join("gde.tar.gz")
+    }
+
+    struct NullWriter;
+    impl Write for NullWriter {
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            Ok(buf.len())
+        }
+    }
+
+    #[test]
+    fn test_copy() {
+        let dir = TempDir::new().autorm();
+        let tempdir = dir.path();
+        let f = File::open(get_test_file()).unwrap();
+        let tar = GzDecoder::new(f);
+        let mut archive = Archive::new(tar);
+        archive.unpack(&tempdir).unwrap();
+        let target_dir = tempdir.join("gde");
+        let output_dir = tempdir.join("out");
+
+        let f = FilesCopy::new(
+            "git",
+            "39fcdfc",
+            "4116e23",
+            &target_dir,
+            &output_dir,
+            "HEAD",
+        );
+
+        let mut null = NullWriter;
+        f.copy(&mut null).unwrap();
+
+        let from_dir = output_dir.join("from");
+        let to_dir = output_dir.join("to");
+
+        let from_files = glob::glob(&format!("{}", from_dir.join("**").join("*").display()))
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>();
+        let from_dirs = from_files.iter().filter(|x| x.is_dir()).collect::<Vec<_>>();
+        let from_files = from_files
+            .iter()
+            .filter(|x| x.is_file())
+            .collect::<Vec<_>>();
+        assert_eq!(3, from_dirs.len());
+        assert_eq!(3, from_files.len());
+
+        let to_files = glob::glob(&format!("{}", to_dir.join("**").join("*").display()))
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>();
+        let to_dirs = to_files.iter().filter(|x| x.is_dir()).collect::<Vec<_>>();
+        let to_files = to_files.iter().filter(|x| x.is_file()).collect::<Vec<_>>();
+        assert_eq!(3, to_dirs.len());
+        assert_eq!(3, to_files.len());
+
+        assert!(from_dir.join("README.md").exists());
+        assert!(from_dir.join("src").join("bin").join("gde.rs").exists());
+        assert!(from_dir.join("src").join("git").join("mod.rs").exists());
+        assert!(to_dir.join("README.md").exists());
+        assert!(to_dir.join("src").join("bin").join("gde.rs").exists());
+        assert!(to_dir.join("src").join("git").join("mod.rs").exists());
+    }
+}

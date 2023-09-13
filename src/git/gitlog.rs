@@ -26,7 +26,7 @@ impl GitLog {
             if self.all {
                 args.push("--all");
             }
-            args.push("--pretty=format:%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ci) %C(bold blue)<%an>%Creset");
+            args.push("--pretty=format:%h -%d %s (%ci) <%an>");
             args.push("--abbrev-commit");
             args.push("--date=relative");
             let output = Command::new(git)
@@ -44,8 +44,7 @@ impl GitLog {
 
             Ok(stdout
                 .split('\n')
-                .filter(|x| !x.is_empty())
-                .map(|x| x.into())
+                .map(|x| x.to_string())
                 .collect::<Vec<_>>())
         })
     }

@@ -1,7 +1,5 @@
-use anyhow::bail;
 use anyhow::Result;
 use clap::Parser;
-use gde::git::GitDiff;
 use gde::FilesCopy;
 use std::env;
 use std::io::stdout;
@@ -70,19 +68,6 @@ fn main() -> Result<()> {
     };
     output_dir.push(format!("gde-{}", uuid::Uuid::new_v4()));
     println!("Output directory: {}", output_dir.display());
-
-    // check changes
-    let gitdiff = GitDiff::new(&git_path, "HEAD", None::<String>, &target_dir)?;
-    if !gitdiff.name_only()?.is_empty() || !gitdiff.staged_name_only()?.is_empty() {
-        bail!("Please commit or discard the changes");
-    }
-
-    let gitdiff = GitDiff::new(&git_path, &cli.from, Some(&cli.to), &target_dir)?;
-    let files = gitdiff.name_only()?;
-    println!("Updated files:");
-    for file in files.iter() {
-        println!("\t{}", file);
-    }
 
     let current_commit = git.get_hash(&target_dir, "HEAD")?;
     println!("Current commit: {}", current_commit);

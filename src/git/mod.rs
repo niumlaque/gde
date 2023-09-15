@@ -1,12 +1,18 @@
 mod error;
 mod gitcheckout;
 mod gitdiff;
+mod gitlog;
 mod gitlstree;
+mod gitreset;
+mod onelinelog;
 
 pub use error::{Error, Result};
 pub use gitcheckout::GitCheckout;
 pub use gitdiff::GitDiff;
+pub use gitlog::GitLog;
 pub use gitlstree::GitLsTree;
+pub use gitreset::GitReset;
+pub use onelinelog::{Commit, OnelineLog};
 
 use std::env::{self, current_dir};
 use std::path::{Path, PathBuf};

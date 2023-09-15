@@ -3,13 +3,13 @@ use super::{Error, Result};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-pub struct GitCheckout {
+pub struct GitReset {
     inner: Git,
     commit: String,
     root_dir: PathBuf,
 }
 
-impl GitCheckout {
+impl GitReset {
     pub fn new(
         git: impl AsRef<Path>,
         commit: impl Into<String>,
@@ -24,9 +24,9 @@ impl GitCheckout {
         })
     }
 
-    pub fn checkout(&self, path: &str) -> Result<PathBuf> {
+    pub fn hard(&self) -> Result<()> {
         self.inner.exec(&self.root_dir, |git| {
-            let args = vec!["checkout", &self.commit, path];
+            let args = vec!["reset", "--hard", &self.commit];
             let output = Command::new(git)
                 .args(args)
                 .stderr(Stdio::piped())
@@ -37,7 +37,7 @@ impl GitCheckout {
                 return Err(Error::Command(format!("{stderr}")));
             }
 
-            Ok(self.root_dir.join(path))
+            Ok(())
         })
     }
 }

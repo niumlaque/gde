@@ -8,6 +8,7 @@ pub enum Error {
     Io(io::Error),
     FromUtf8(FromUtf8Error),
     Command(String),
+    LogParse(String),
 }
 
 impl From<io::Error> for Error {
@@ -28,6 +29,7 @@ impl std::fmt::Display for Error {
             Self::Io(e) => write!(f, "{e}"),
             Self::FromUtf8(e) => write!(f, "{e}"),
             Self::Command(e) => write!(f, "{e}"),
+            Self::LogParse(e) => write!(f, "Could not parse \"{e}\""),
         }
     }
 }

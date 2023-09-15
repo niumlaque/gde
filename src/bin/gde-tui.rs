@@ -252,8 +252,8 @@ impl GdeTerminal {
                     break;
                 }
                 match (key.code, key.modifiers) {
-                    (KeyCode::Esc, _) => break 'outer,
-                    (KeyCode::Char('c'), KeyModifiers::CONTROL) => break 'outer,
+                    (KeyCode::Esc, _) => return Ok(None),
+                    (KeyCode::Char('c'), KeyModifiers::CONTROL) => return Ok(None),
                     (KeyCode::Enter, KeyModifiers::NONE) => match (&from_commit, &to_commit) {
                         (Some(from), Some(to)) => {
                             if from.hash == to.hash {

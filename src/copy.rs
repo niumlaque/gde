@@ -53,9 +53,6 @@ impl FilesCopy {
             bail!("Please commit or discard the changes");
         }
 
-        // check output directory
-        fs::create_dir_all(&self.output_dir)?;
-
         let gitdiff = GitDiff::new(
             &self.git_path,
             &self.from_commit,
@@ -63,6 +60,15 @@ impl FilesCopy {
             &self.target_dir,
         )?;
         let files = gitdiff.name_only()?;
+        if files.is_empty() {
+            writeln!(
+                w,
+                "There are no files with differences between {} and {}",
+                self.from_commit, self.to_commit
+            )?;
+            return Ok(());
+        }
+
         writeln!(
             w,
             "Updated files between {} and {}:",
@@ -71,6 +77,9 @@ impl FilesCopy {
         for file in files.iter() {
             writeln!(w, "\t{}", file)?;
         }
+
+        // check output directory
+        fs::create_dir_all(&self.output_dir)?;
 
         // Copy files from "From Commit"
         let from_dir = self.output_dir.join("from");

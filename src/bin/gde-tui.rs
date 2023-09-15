@@ -23,6 +23,10 @@ struct Cli {
     #[arg(long, value_name = "GIT EXECUTABLE")]
     git: Option<PathBuf>,
 
+    /// Show all branches tags and remotes
+    #[arg(short, long)]
+    all: bool,
+
     /// Destination for output files
     #[arg(short, long, value_name = "OUTPUT DIR")]
     output: Option<PathBuf>,
@@ -340,7 +344,8 @@ fn main() -> Result<()> {
     } else {
         env::current_dir()?
     };
-    let gitlog = gde::git::GitLog::new(&git_path, true, &target_dir)?;
+
+    let gitlog = gde::git::GitLog::new(&git_path, cli.all, &target_dir)?;
     let logs = gitlog.tree()?;
     let logs = logs.into_iter().map(OnelineLog::from).collect::<Vec<_>>();
     let mut term = GdeTerminal::new()?;

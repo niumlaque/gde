@@ -1,7 +1,7 @@
 // TODO: Need refactoring
 use anyhow::Result;
 use clap::Parser;
-use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use crossterm::execute;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -247,6 +247,10 @@ impl GdeTerminal {
             })?;
 
             while let Event::Key(key) = event::read()? {
+                if key.kind != KeyEventKind::Press {
+                    // for Windows
+                    break;
+                }
                 match (key.code, key.modifiers) {
                     (KeyCode::Esc, _) => break 'outer,
                     (KeyCode::Char('c'), KeyModifiers::CONTROL) => break 'outer,

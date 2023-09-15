@@ -1,4 +1,5 @@
-use crate::git::{GitCheckout, GitDiff, GitLsTree};
+use crate::git::{GitCheckout, GitDiff, GitLsTree, GitReset};
+use crate::Defer;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
 use std::fs;
@@ -154,6 +155,8 @@ impl<'a> FilesCopyInner<'a> {
         let set = gitls.name_only()?.into_iter().collect::<HashSet<_>>();
         let gc = GitCheckout::new(self.git_path, self.commit, self.target_dir)?;
         let gc_origin = GitCheckout::new(self.git_path, self.original_commit, self.target_dir)?;
+        let gr = GitReset::new(self.git_path, self.commit, self.target_dir)?;
+        let _defer = Defer::new(|| gr.hard().unwrap());
 
         for file in self.target_files.iter() {
             let mut dir = PathBuf::from(file);
@@ -171,9 +174,7 @@ impl<'a> FilesCopyInner<'a> {
                     dest_file.display()
                 )?;
 
-                if let Err(e) = gc_origin.checkout(file) {
-                    bail!("Failed to reset {file} to {}({e})", self.original_commit);
-                }
+                let _ = gc_origin.checkout(file);
             }
         }
 

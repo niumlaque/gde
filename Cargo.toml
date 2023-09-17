@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = { version = "1.0.72", features = ["backtrace"] }
-clap = { version = "4.3.19", features = ["derive"] }
+anyhow = { version = "1.0.75", features = ["backtrace"] }
+clap = { version = "4.4.3", features = ["derive"] }
 itertools = "0.11.0"
 ratatui = { version = "0.23.0", features = ["all-widgets"] }
 crossterm = "0.27.0"

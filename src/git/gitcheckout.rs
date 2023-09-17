@@ -34,7 +34,7 @@ impl GitCheckout {
             let stderr = String::from_utf8(output.stderr)?;
 
             if !output.status.success() {
-                return Err(Error::Command(format!("{stderr}")));
+                return Err(Error::Command(stderr));
             }
 
             Ok(self.root_dir.join(path))

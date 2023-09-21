@@ -90,8 +90,9 @@ impl Git {
 
             if !output.status.success() {
                 let stderr = String::from_utf8(output.stderr)?;
-                println!("{stderr}");
-                return Err(Error::Command("Failed to get root directory".into()));
+                return Err(Error::Command(format!(
+                    "Failed to get root directory ({stderr})"
+                )));
             }
 
             if let Some(ret) = stdout.split('\n').next() {
@@ -116,8 +117,9 @@ impl Git {
 
             if !output.status.success() {
                 let stderr = String::from_utf8(output.stderr)?;
-                println!("{stderr}");
-                return Err(Error::Command(format!("Failed to get hash of {commit}")));
+                return Err(Error::Command(format!(
+                    "Failed to get hash of {commit} ({stderr})"
+                )));
             }
 
             if let Some(ret) = stdout.split('\n').next() {

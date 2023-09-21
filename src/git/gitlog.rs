@@ -38,8 +38,7 @@ impl GitLog {
             let stderr = String::from_utf8(output.stderr)?;
 
             if !output.status.success() {
-                println!("{stderr}");
-                return Err(Error::Command("Failed to get logs".into()));
+                return Err(Error::Command(format!("Failed to get logs ({stderr})")));
             }
 
             Ok(stdout

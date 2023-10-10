@@ -154,8 +154,7 @@ impl<'a> FilesCopyInner<'a> {
         let gitls = GitLsTree::new(self.git_path, self.commit, self.target_dir)?;
         let set = gitls.name_only()?.into_iter().collect::<HashSet<_>>();
         let gc = GitCheckout::new(self.git_path, self.commit, self.target_dir)?;
-        let gc_origin = GitCheckout::new(self.git_path, self.original_commit, self.target_dir)?;
-        let gr = GitReset::new(self.git_path, self.commit, self.target_dir)?;
+        let gr = GitReset::new(self.git_path, self.original_commit, self.target_dir)?;
         let _defer = Defer::new(|| gr.hard().unwrap());
 
         for file in self.target_files.iter() {
@@ -173,8 +172,6 @@ impl<'a> FilesCopyInner<'a> {
                     source_file.display(),
                     dest_file.display()
                 )?;
-
-                let _ = gc_origin.checkout(file);
             }
         }
 

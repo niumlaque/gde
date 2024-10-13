@@ -236,12 +236,12 @@ impl GdeTerminal {
                 .to_string();
             let notice = Paragraph::new(notice_text).block(notice);
             self.inner.draw(|frame| {
-                let mut log_size = frame.size();
+                let mut log_size = frame.area();
                 log_size.height -= 7;
-                let mut sc_size = frame.size();
+                let mut sc_size = frame.area();
                 sc_size.y += log_size.height;
                 sc_size.height = 4;
-                let mut notice_size = frame.size();
+                let mut notice_size = frame.area();
                 notice_size.y += sc_size.y + sc_size.height;
                 notice_size.height = 3;
 

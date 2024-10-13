@@ -39,10 +39,12 @@ pub struct Commit {
     /// Tree
     /// This refers to the '|\', '|', and '|/' in the following graph
     ///
+    /// ```
     /// *   3706c44 - (origin/master, master) Merge pull request #1 from niumlaque/single-binary-for-windows (2023-08-15 12:52:59 +0900) <Niumlaque>
     /// |\  
     /// | * e252a0a - (origin/single-binary-for-windows, single-binary-for-windows) Add configuration to generate a single binary for Windows (2023-08-15 12:52:25 +0900) <Niumlaque>
     /// |/
+    /// ```
     tree_head: String,
 
     /// Padding for hash

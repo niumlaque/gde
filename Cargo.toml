@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = { version = "1.0.81", features = ["backtrace"] }
-clap = { version = "4.5.4", features = ["derive"] }
-itertools = "0.12.1"
-ratatui = { version = "0.26.1", features = ["all-widgets"] }
-crossterm = "0.27.0"
-uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
+anyhow = { version = "1.0.89", features = ["backtrace"] }
+clap = { version = "4.5.20", features = ["derive"] }
+itertools = "0.13.0"
+ratatui = { version = "0.28.1", features = ["all-widgets"] }
+crossterm = "0.28.1"
+uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 
 [dev-dependencies]
 outdir-tempdir = "0.2"

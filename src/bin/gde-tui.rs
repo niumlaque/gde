@@ -209,7 +209,7 @@ impl GdeTerminal {
 
                         return ListItem::new(to_term_string(x, Some(" ")));
                     }
-                    return ListItem::new(to_term_string(x, None));
+                    ListItem::new(to_term_string(x, None))
                 })
                 .collect::<Vec<_>>();
             let logs = List::new(logs)

@@ -1,7 +1,5 @@
-use crate::git::{GitCheckout, GitDiff, GitLsTree, GitReset};
-use crate::Defer;
-use anyhow::{bail, Result};
-use std::collections::HashSet;
+use crate::git::{GitDiff, GitWorktree};
+use anyhow::Result;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -48,12 +46,6 @@ impl FilesCopy {
 
     /// Copies the differential files between the commits specified in the constructor
     pub fn copy<W: Write>(&self, w: &mut W) -> Result<()> {
-        // check changes
-        let gitdiff = GitDiff::new(&self.git_path, "HEAD", None::<String>, &self.target_dir)?;
-        if !gitdiff.name_only()?.is_empty() || !gitdiff.staged_name_only()?.is_empty() {
-            bail!("Please commit or discard the changes");
-        }
-
         let gitdiff = GitDiff::new(
             &self.git_path,
             &self.from_commit,
@@ -81,90 +73,104 @@ impl FilesCopy {
 
         // check output directory
         fs::create_dir_all(&self.output_dir)?;
+        // Kept for API compatibility with the previous checkout/reset implementation.
+        let _ = &self.current_commit;
+
+        let worktree_base_dir = std::env::temp_dir().join("gde-worktrees");
+        let worktree_session_dir = worktree_base_dir.join(uuid::Uuid::new_v4().to_string());
+        let from_worktree_dir = worktree_session_dir.join("from");
+        let to_worktree_dir = worktree_session_dir.join("to");
+        let git_worktree = GitWorktree::new(&self.git_path, &self.target_dir)?;
+        git_worktree.add_detached(&from_worktree_dir, &self.from_commit)?;
+        let _from_guard = WorktreeGuard::new(
+            &git_worktree,
+            &from_worktree_dir,
+            &worktree_session_dir,
+            &worktree_base_dir,
+        );
+        git_worktree.add_detached(&to_worktree_dir, &self.to_commit)?;
+        let _to_guard = WorktreeGuard::new(
+            &git_worktree,
+            &to_worktree_dir,
+            &worktree_session_dir,
+            &worktree_base_dir,
+        );
 
         // Copy files from "From Commit"
         let from_dir = self.output_dir.join("from");
         writeln!(w, "Copiying files from \"{}\"...", self.from_commit)?;
-        let from = FilesCopyInner::new(
-            &self.git_path,
-            &files,
-            &self.target_dir,
-            &self.from_commit,
-            &self.current_commit,
-            &from_dir,
-        );
+        let from = FilesCopyInner::new(&files, &from_worktree_dir, &from_dir);
         from.copy(w)?;
 
         // Copy files from "To Commit"
         let to_dir = self.output_dir.join("to");
         writeln!(w, "Copiying files from \"{}\"...", self.to_commit)?;
-        let to = FilesCopyInner::new(
-            &self.git_path,
-            &files,
-            &self.target_dir,
-            &self.to_commit,
-            &self.current_commit,
-            &to_dir,
-        );
+        let to = FilesCopyInner::new(&files, &to_worktree_dir, &to_dir);
         to.copy(w)?;
         Ok(())
     }
 }
 
-struct FilesCopyInner<'a> {
-    /// The path to the git executable
-    git_path: &'a Path,
+struct WorktreeGuard<'a> {
+    git_worktree: &'a GitWorktree,
+    worktree_dir: &'a Path,
+    worktree_session_dir: &'a Path,
+    worktree_base_dir: &'a Path,
+}
 
+impl<'a> WorktreeGuard<'a> {
+    fn new(
+        git_worktree: &'a GitWorktree,
+        worktree_dir: &'a Path,
+        worktree_session_dir: &'a Path,
+        worktree_base_dir: &'a Path,
+    ) -> Self {
+        Self {
+            git_worktree,
+            worktree_dir,
+            worktree_session_dir,
+            worktree_base_dir,
+        }
+    }
+}
+
+impl Drop for WorktreeGuard<'_> {
+    fn drop(&mut self) {
+        let _ = self.git_worktree.remove_force(self.worktree_dir);
+        let _ = fs::remove_dir(self.worktree_session_dir);
+        let _ = fs::remove_dir(self.worktree_base_dir);
+    }
+}
+
+struct FilesCopyInner<'a> {
     /// The files to copy
     target_files: &'a [String],
 
-    /// The path to the directory where the files to be copied are located
-    target_dir: &'a Path,
-
-    /// Copy the files from this commit
-    commit: &'a str,
-
-    /// The hash of the current commit in the target directory
-    original_commit: &'a str,
+    /// The root path to copy files from
+    source_root: &'a Path,
 
     /// The path to the directory for output
     output_dir: &'a Path,
 }
 
 impl<'a> FilesCopyInner<'a> {
-    fn new(
-        git_path: &'a Path,
-        target_files: &'a [String],
-        target_dir: &'a Path,
-        commit: &'a str,
-        original_commit: &'a str,
-        output_dir: &'a Path,
-    ) -> Self {
+    fn new(target_files: &'a [String], source_root: &'a Path, output_dir: &'a Path) -> Self {
         Self {
-            git_path,
             target_files,
-            target_dir,
-            commit,
-            original_commit,
+            source_root,
             output_dir,
         }
     }
 
     fn copy<W: Write>(&self, w: &mut W) -> Result<()> {
-        let gitls = GitLsTree::new(self.git_path, self.commit, self.target_dir)?;
-        let set = gitls.name_only()?.into_iter().collect::<HashSet<_>>();
-        let gc = GitCheckout::new(self.git_path, self.commit, self.target_dir)?;
-        let gr = GitReset::new(self.git_path, self.original_commit, self.target_dir)?;
-        let _defer = Defer::new(|| gr.hard().unwrap());
-
         for file in self.target_files.iter() {
             let mut dir = PathBuf::from(file);
             dir.pop();
             let out_dir = self.output_dir.join(dir);
             fs::create_dir_all(&out_dir)?;
-            if set.contains(file) {
+            let source_file = self.source_root.join(file);
+            if source_file.is_file() {
                 let dest_file = self.output_dir.join(file);
-                let source_file = gc.checkout(file)?;
                 fs::copy(&source_file, &dest_file)?;
                 writeln!(
                     w,
@@ -284,6 +290,15 @@ mod tests {
             )
         }
 
+        fn files_copy_with_output_dir(
+            &self,
+            from: &str,
+            to: &str,
+            output_dir: impl Into<PathBuf>,
+        ) -> FilesCopy {
+            FilesCopy::new("git", from, to, &self.repo_dir, output_dir.into(), self.head())
+        }
+
         fn head(&self) -> String {
             run_git(&self.repo_dir, &["rev-parse", "HEAD"]).trim().to_string()
         }
@@ -362,6 +377,10 @@ mod tests {
 
     fn assert_not_exists(path: impl AsRef<Path>) {
         assert!(!path.as_ref().exists(), "{} exists", path.as_ref().display());
+    }
+
+    fn assert_exists(path: impl AsRef<Path>) {
+        assert!(path.as_ref().exists(), "{} does not exist", path.as_ref().display());
     }
 
     #[test]
@@ -528,39 +547,68 @@ mod tests {
         assert!(output.contains("There are no files with differences"));
         assert_not_exists(repo.output_file("from", "changed.txt"));
         assert_not_exists(repo.output_file("to", "changed.txt"));
+        assert_not_exists(repo.output_dir.join(".gde-worktrees"));
     }
 
     #[test]
-    fn copy_fails_when_working_tree_has_unstaged_changes() {
+    fn copy_succeeds_when_working_tree_has_unstaged_changes() {
         let _lock = git_test_lock();
         let repo = TestRepo::new();
         let _ = repo._keep_dir_alive();
         write_bytes(repo.repo_dir.join("changed.txt"), b"dirty working tree\n");
+        let before_head = repo.head();
 
         let mut out = Vec::new();
-        let err = repo
-            .files_copy(&repo.commit_a, &repo.commit_b)
+        repo.files_copy(&repo.commit_a, &repo.commit_b)
             .copy(&mut out)
-            .unwrap_err();
+            .unwrap();
 
-        assert!(err.to_string().contains("Please commit or discard the changes"));
+        assert_eq!(before_head, repo.head());
+        assert_file_bytes(repo.repo_dir.join("changed.txt"), b"dirty working tree\n");
+        assert_eq!("changed.txt", run_git(&repo.repo_dir, &["diff", "--name-only"]).trim());
+        assert_eq!(
+            "",
+            run_git(&repo.repo_dir, &["diff", "--staged", "--name-only"]).trim()
+        );
+        assert_file_bytes(
+            repo.output_file("from", "changed.txt"),
+            &repo.rev_file_bytes(&repo.commit_a, "changed.txt"),
+        );
+        assert_file_bytes(
+            repo.output_file("to", "changed.txt"),
+            &repo.rev_file_bytes(&repo.commit_b, "changed.txt"),
+        );
     }
 
     #[test]
-    fn copy_fails_when_working_tree_has_staged_changes() {
+    fn copy_succeeds_when_working_tree_has_staged_changes() {
         let _lock = git_test_lock();
         let repo = TestRepo::new();
         let _ = repo._keep_dir_alive();
         write_bytes(repo.repo_dir.join("changed.txt"), b"staged working tree\n");
         run_git(&repo.repo_dir, &["add", "changed.txt"]);
+        let before_head = repo.head();
 
         let mut out = Vec::new();
-        let err = repo
-            .files_copy(&repo.commit_a, &repo.commit_b)
+        repo.files_copy(&repo.commit_a, &repo.commit_b)
             .copy(&mut out)
-            .unwrap_err();
+            .unwrap();
 
-        assert!(err.to_string().contains("Please commit or discard the changes"));
+        assert_eq!(before_head, repo.head());
+        assert_file_bytes(repo.repo_dir.join("changed.txt"), b"staged working tree\n");
+        assert_eq!("", run_git(&repo.repo_dir, &["diff", "--name-only"]).trim());
+        assert_eq!(
+            "changed.txt",
+            run_git(&repo.repo_dir, &["diff", "--staged", "--name-only"]).trim()
+        );
+        assert_file_bytes(
+            repo.output_file("from", "changed.txt"),
+            &repo.rev_file_bytes(&repo.commit_a, "changed.txt"),
+        );
+        assert_file_bytes(
+            repo.output_file("to", "changed.txt"),
+            &repo.rev_file_bytes(&repo.commit_b, "changed.txt"),
+        );
     }
 
     #[test]
@@ -596,6 +644,41 @@ mod tests {
             "",
             run_git(&repo.repo_dir, &["diff", "--staged", "--name-only"]).trim()
         );
+        assert_not_exists(repo.output_dir.join(".gde-worktrees"));
+    }
+
+    #[test]
+    fn copy_keeps_output_dir_after_worktree_cleanup() {
+        let _lock = git_test_lock();
+        let repo = TestRepo::new();
+        let _ = repo._keep_dir_alive();
+        let mut out = Vec::new();
+
+        repo.files_copy(&repo.commit_a, &repo.commit_b)
+            .copy(&mut out)
+            .unwrap();
+
+        assert_exists(&repo.output_dir);
+        assert_exists(repo.output_file("from", "changed.txt"));
+        assert_exists(repo.output_file("to", "changed.txt"));
+        assert_not_exists(repo.output_dir.join(".gde-worktrees"));
+    }
+
+    #[test]
+    fn copy_keeps_existing_output_dir_contents() {
+        let _lock = git_test_lock();
+        let repo = TestRepo::new();
+        let _ = repo._keep_dir_alive();
+        write_bytes(repo.output_dir.join("keep.txt"), b"keep me\n");
+        let mut out = Vec::new();
+
+        repo.files_copy(&repo.commit_a, &repo.commit_b)
+            .copy(&mut out)
+            .unwrap();
+
+        assert_file_bytes(repo.output_dir.join("keep.txt"), b"keep me\n");
+        assert_exists(&repo.output_dir);
+        assert_not_exists(repo.output_dir.join(".gde-worktrees"));
     }
 
     #[test]
@@ -646,5 +729,40 @@ mod tests {
             repo.output_file("to", "bin.dat"),
             &repo.rev_file_bytes(&repo.commit_b, "bin.dat"),
         );
+    }
+
+    #[test]
+    fn copy_keeps_untracked_files_in_source_repository() {
+        let _lock = git_test_lock();
+        let repo = TestRepo::new();
+        let _ = repo._keep_dir_alive();
+        write_bytes(repo.repo_dir.join("local-only.txt"), b"local only\n");
+        let mut out = Vec::new();
+
+        repo.files_copy(&repo.commit_a, &repo.commit_b)
+            .copy(&mut out)
+            .unwrap();
+
+        assert_exists(repo.repo_dir.join("local-only.txt"));
+        assert_not_exists(repo.output_file("from", "local-only.txt"));
+        assert_not_exists(repo.output_file("to", "local-only.txt"));
+    }
+
+    #[test]
+    fn copy_succeeds_with_output_dir_inside_repository() {
+        let _lock = git_test_lock();
+        let repo = TestRepo::new();
+        let _ = repo._keep_dir_alive();
+        let output_dir = repo.repo_dir.join("artifacts");
+        let mut out = Vec::new();
+
+        repo.files_copy_with_output_dir(&repo.commit_a, &repo.commit_b, &output_dir)
+            .copy(&mut out)
+            .unwrap();
+
+        assert_exists(output_dir.join("from").join("changed.txt"));
+        assert_exists(output_dir.join("to").join("changed.txt"));
+        assert_not_exists(repo.repo_dir.join(".gde-worktrees"));
+        assert_not_exists(output_dir.join(".gde-worktrees"));
     }
 }

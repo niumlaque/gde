@@ -4,6 +4,7 @@ mod gitdiff;
 mod gitlog;
 mod gitlstree;
 mod gitreset;
+mod gitworktree;
 mod onelinelog;
 
 pub use error::{Error, Result};
@@ -12,6 +13,7 @@ pub use gitdiff::GitDiff;
 pub use gitlog::GitLog;
 pub use gitlstree::GitLsTree;
 pub use gitreset::GitReset;
+pub use gitworktree::GitWorktree;
 pub use onelinelog::{Commit, OnelineLog};
 
 use std::env::{self, current_dir};

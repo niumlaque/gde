@@ -1,18 +1,24 @@
 mod error;
 mod gitcheckout;
 mod gitdiff;
+mod gitlocalbranches;
 mod gitlog;
 mod gitlstree;
+mod gitmergebase;
 mod gitreset;
+mod gitrevision;
 mod gitworktree;
 mod onelinelog;
 
 pub use error::{Error, Result};
 pub use gitcheckout::GitCheckout;
 pub use gitdiff::GitDiff;
+pub use gitlocalbranches::{GitLocalBranch, GitLocalBranches};
 pub use gitlog::GitLog;
 pub use gitlstree::GitLsTree;
+pub use gitmergebase::GitMergeBase;
 pub use gitreset::GitReset;
+pub use gitrevision::GitRevision;
 pub use gitworktree::GitWorktree;
 pub use onelinelog::{Commit, OnelineLog};
 

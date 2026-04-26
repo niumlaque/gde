@@ -188,18 +188,13 @@ impl<'a> FilesCopyInner<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testutil::git_test_lock;
     use flate2::read::GzDecoder;
     use outdir_tempdir::TempDir;
     use std::env;
     use std::fs::{self, File};
     use std::process::Command;
-    use std::sync::{Mutex, MutexGuard, OnceLock};
     use tar::Archive;
-
-    fn git_test_lock() -> MutexGuard<'static, ()> {
-        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
-    }
 
     fn get_test_file() -> PathBuf {
         env::current_dir().unwrap().join("tests").join("gde.tar.gz")
@@ -234,7 +229,10 @@ mod tests {
 
             run_git(&repo_dir, &["init"]);
             run_git(&repo_dir, &["config", "user.name", "gde tests"]);
-            run_git(&repo_dir, &["config", "user.email", "gde-tests@example.com"]);
+            run_git(
+                &repo_dir,
+                &["config", "user.email", "gde-tests@example.com"],
+            );
             run_git(&repo_dir, &["config", "commit.gpgsign", "false"]);
             run_git(&repo_dir, &["config", "core.autocrlf", "false"]);
 
@@ -245,7 +243,10 @@ mod tests {
             write_bytes(repo_dir.join("changed.txt"), b"before change\n");
             write_bytes(repo_dir.join("deleted.txt"), b"delete me\n");
             write_bytes(repo_dir.join("unchanged.txt"), b"stable\n");
-            write_bytes(repo_dir.join("nested").join("path").join("file.txt"), b"nested a\n");
+            write_bytes(
+                repo_dir.join("nested").join("path").join("file.txt"),
+                b"nested a\n",
+            );
             write_bytes(repo_dir.join("crlf.txt"), b"line1\r\nline2\r\n");
             write_bytes(repo_dir.join("crlf-normalized.txt"), b"line1\r\nline2\r\n");
             write_bytes(repo_dir.join("bin.dat"), &[0x00, 0x01, 0x02, 0x03, 0x0a]);
@@ -254,7 +255,10 @@ mod tests {
             write_bytes(repo_dir.join("changed.txt"), b"after change\n");
             fs::remove_file(repo_dir.join("deleted.txt")).unwrap();
             write_bytes(repo_dir.join("added.txt"), b"added in commit b\n");
-            write_bytes(repo_dir.join("nested").join("path").join("file.txt"), b"nested b\n");
+            write_bytes(
+                repo_dir.join("nested").join("path").join("file.txt"),
+                b"nested b\n",
+            );
             write_bytes(repo_dir.join("crlf.txt"), b"line1\r\nline2 changed\r\n");
             write_bytes(
                 repo_dir.join("crlf-normalized.txt"),
@@ -296,11 +300,20 @@ mod tests {
             to: &str,
             output_dir: impl Into<PathBuf>,
         ) -> FilesCopy {
-            FilesCopy::new("git", from, to, &self.repo_dir, output_dir.into(), self.head())
+            FilesCopy::new(
+                "git",
+                from,
+                to,
+                &self.repo_dir,
+                output_dir.into(),
+                self.head(),
+            )
         }
 
         fn head(&self) -> String {
-            run_git(&self.repo_dir, &["rev-parse", "HEAD"]).trim().to_string()
+            run_git(&self.repo_dir, &["rev-parse", "HEAD"])
+                .trim()
+                .to_string()
         }
 
         fn output_file(&self, side: &str, path: &str) -> PathBuf {
@@ -376,11 +389,19 @@ mod tests {
     }
 
     fn assert_not_exists(path: impl AsRef<Path>) {
-        assert!(!path.as_ref().exists(), "{} exists", path.as_ref().display());
+        assert!(
+            !path.as_ref().exists(),
+            "{} exists",
+            path.as_ref().display()
+        );
     }
 
     fn assert_exists(path: impl AsRef<Path>) {
-        assert!(path.as_ref().exists(), "{} does not exist", path.as_ref().display());
+        assert!(
+            path.as_ref().exists(),
+            "{} does not exist",
+            path.as_ref().display()
+        );
     }
 
     #[test]
@@ -391,7 +412,7 @@ mod tests {
         let f = File::open(get_test_file()).unwrap();
         let tar = GzDecoder::new(f);
         let mut archive = Archive::new(tar);
-        archive.unpack(&tempdir).unwrap();
+        archive.unpack(tempdir).unwrap();
         let target_dir = tempdir.join("gde");
         let output_dir = tempdir.join("out");
 
@@ -565,7 +586,10 @@ mod tests {
 
         assert_eq!(before_head, repo.head());
         assert_file_bytes(repo.repo_dir.join("changed.txt"), b"dirty working tree\n");
-        assert_eq!("changed.txt", run_git(&repo.repo_dir, &["diff", "--name-only"]).trim());
+        assert_eq!(
+            "changed.txt",
+            run_git(&repo.repo_dir, &["diff", "--name-only"]).trim()
+        );
         assert_eq!(
             "",
             run_git(&repo.repo_dir, &["diff", "--staged", "--name-only"]).trim()
